@@ -7,6 +7,20 @@ export function useWishlist() {
   const loading = ref(false)
   const error = ref(null)
 
+  const normalizeWishlistItem = (item) => {
+    const product = item?.product || item?.product_info || item?.details || {}
+    return {
+      id: item?.id ?? product?.id ?? null,
+      product_id: item?.product_id ?? product?.id ?? null,
+      name: item?.name ?? product?.name ?? 'Product',
+      image: item?.image ?? product?.image ?? product?.image_url ?? '',
+      price: item?.price ?? product?.price ?? 0,
+      category: item?.category?.name ?? product?.category?.name ?? item?.category_name ?? '',
+      created_at: item?.created_at ?? item?.added_at ?? null,
+      raw: item,
+    }
+  }
+
   const requireAuth = () => {
     if (!getToken()) {
       throw new Error('Please login to use wishlist.')
@@ -19,7 +33,15 @@ export function useWishlist() {
     try {
       requireAuth()
       const response = await get('/wishlist')
-      items.value = Array.isArray(response.data) ? response.data : response
+      const list =
+        response?.data?.data ||
+        response?.data?.wishlist ||
+        response?.data ||
+        response?.wishlist ||
+        response ||
+        []
+      const array = Array.isArray(list) ? list : []
+      items.value = array.map(normalizeWishlistItem)
       return items.value
     } catch (err) {
       error.value = err.message
@@ -35,8 +57,8 @@ export function useWishlist() {
       requireAuth()
       const response = await post('/wishlist', { product_id: productId })
       
-      // Add to local state
-      const newItem = response.data || response
+      // Add to local state using a small normalized shape
+      const newItem = normalizeWishlistItem(response?.data?.wishlist || response?.data || response)
       items.value.push(newItem)
       
       return response
