@@ -1,0 +1,66 @@
+import { useAuthStore } from '@/stores/auth';
+
+export function useAuth() {
+  const authStore = useAuthStore();
+
+  // Register user
+  const register = async (name, email, password, passwordConfirmation) => {
+    return await authStore.register({
+      name,
+      email,
+      password,
+      password_confirmation: passwordConfirmation,
+    });
+  };
+
+  // Login user
+  const login = async (email, password) => {
+    return await authStore.login({
+      email,
+      password,
+    });
+  };
+
+  // Logout user
+  const logout = async () => {
+    return await authStore.logout();
+  };
+
+  // Get profile
+  const getProfile = () => {
+    return authStore.user;
+  };
+
+  // Update profile
+  const updateProfile = async (name, email) => {
+    return await authStore.updateProfile({
+      name,
+      email,
+    });
+  };
+
+  // Change password
+  const changePassword = async (currentPassword, newPassword) => {
+    return await authStore.changePassword({
+      current_password: currentPassword,
+      password: newPassword,
+      password_confirmation: newPassword,
+    });
+  };
+
+  return {
+    // State
+    user: authStore.user,
+    isAuthenticated: authStore.isAuthenticated,
+    loading: authStore.loading,
+    error: authStore.error,
+    
+    // Actions
+    register,
+    login,
+    logout,
+    getProfile,
+    updateProfile,
+    changePassword,
+  };
+}

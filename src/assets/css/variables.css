@@ -1,0 +1,23 @@
+:root {
+    /* Color Palette */
+    --primary: #024cab;
+    --primary-hover: #00367a;
+    --sidebar-bg: #ffffff;
+    --sidebar-color: #64748b;
+    --sidebar-hover: #f1f5f9;
+    --sidebar-active: #e6f0fa;
+    --sidebar-active-text: #024cab;
+    --body-bg: #f8fafc;
+    --card-bg: #ffffff;
+    --border-color: #f1f5f9;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    
+    /* Status Colors */
+    --success: #1ea956;
+    --success-bg: #e6f7ed;
+    --danger: #ef4444;
+    --danger-bg: #fef2f2;
+    --warning: #f59e0b;
+    --warning-bg: #fef3c7;
+}

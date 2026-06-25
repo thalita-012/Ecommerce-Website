@@ -34,16 +34,20 @@ const router = createRouter({
 })
 
 // Route Guard
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, from) => {
   const authStore = useAuthStore()
-  
+
+  // Route requires auth and user not logged in
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next({ name: 'Login', query: { redirect: to.fullPath } })
-  } else if ((to.name === 'Login' || to.name === 'Register') && authStore.isAuthenticated) {
-    next({ name: 'Home' })
-  } else {
-    next()
+    return { name: 'Login', query: { redirect: to.fullPath } }  // ✅ Return redirect
   }
+
+  // User already logged in trying to access login page
+  if ((to.name === 'Login' || to.name === 'Register') && authStore.isAuthenticated) {
+    return { name: 'Home' }  // ✅ Return home
+  }
+
+  return true  // ✅ Return true to allow navigation
 })
 
 export default router
