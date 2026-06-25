@@ -40,6 +40,10 @@ export function useProducts() {
     try {
       const params = new URLSearchParams()
       if (filters.category) params.append('category', filters.category)
+      if (filters.category_id) {
+        params.append('category_id', filters.category_id)
+        params.append('category', filters.category_id)
+      }
       if (filters.min_price) params.append('min_price', filters.min_price)
       if (filters.max_price) params.append('max_price', filters.max_price)
       if (filters.sort) params.append('sort', filters.sort)

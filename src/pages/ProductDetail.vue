@@ -229,6 +229,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import Swal from 'sweetalert2'
 import { useProducts } from '@/composables/useProducts'
 import { useCart } from '@/composables/useCart'
 import { useWishlist } from '@/composables/useWishlist'
@@ -315,11 +316,21 @@ const handleAddToCart = async () => {
       quantity: quantity.value,
     })
 
-    alert(`Added ${quantity.value} item(s) to cart!`)
+    await Swal.fire({
+      icon: 'success',
+      title: 'Added to cart',
+      text: `Added ${quantity.value} item(s) to cart!`,
+      confirmButtonColor: '#ef4444',
+    })
     quantity.value = 1
   } catch (err) {
     console.error('Add to cart error:', err)
-    alert('Failed to add to cart')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Add to cart failed',
+      text: 'Failed to add to cart',
+      confirmButtonColor: '#ef4444',
+    })
   } finally {
     isAddingToCart.value = false
   }
@@ -362,10 +373,20 @@ const submitReview = async () => {
 
     // Reload reviews
     await loadReviews()
-    alert('Review submitted successfully!')
+    await Swal.fire({
+      icon: 'success',
+      title: 'Review submitted',
+      text: 'Review submitted successfully!',
+      confirmButtonColor: '#ef4444',
+    })
   } catch (err) {
     console.error('Submit review error:', err)
-    alert('Failed to submit review')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Review failed',
+      text: 'Failed to submit review',
+      confirmButtonColor: '#ef4444',
+    })
   } finally {
     isSubmittingReview.value = false
   }
@@ -386,15 +407,36 @@ const editReview = (review) => {
 }
 
 const deleteReview = async (reviewId) => {
-  if (confirm('Are you sure you want to delete this review?')) {
-    try {
-      await deleteReviewApi(reviewId)
-      await loadReviews()
-      alert('Review deleted successfully!')
-    } catch (err) {
-      console.error('Delete review error:', err)
-      alert('Failed to delete review')
-    }
+  const confirmResult = await Swal.fire({
+    icon: 'warning',
+    title: 'Delete this review?',
+    text: 'This action cannot be undone.',
+    showCancelButton: true,
+    confirmButtonText: 'Delete',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+  })
+
+  if (!confirmResult.isConfirmed) return
+
+  try {
+    await deleteReviewApi(reviewId)
+    await loadReviews()
+    await Swal.fire({
+      icon: 'success',
+      title: 'Review deleted',
+      text: 'Review deleted successfully!',
+      confirmButtonColor: '#ef4444',
+    })
+  } catch (err) {
+    console.error('Delete review error:', err)
+    await Swal.fire({
+      icon: 'error',
+      title: 'Delete failed',
+      text: 'Failed to delete review',
+      confirmButtonColor: '#ef4444',
+    })
   }
 }
 

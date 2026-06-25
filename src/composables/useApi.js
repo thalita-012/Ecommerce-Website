@@ -2,7 +2,9 @@
 // ✅ Unified API client using fetch with consistent error handling
 import { ref } from 'vue'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+const API_BASE = import.meta.env.DEV
+  ? '/api'
+  : (import.meta.env.VITE_API_URL || '/api')
 const TOKEN_KEY = 'auth_token'
 
 // Custom error class for API errors
@@ -65,6 +67,7 @@ export function useApi() {
   const buildHeaders = (customHeaders = {}) => {
     const headers = {
       'Content-Type': 'application/json',
+      Accept: 'application/json',
       ...customHeaders,
     }
 
@@ -142,7 +145,10 @@ export function useApi() {
         throw err
       }
 
-      const errorMessage = err.message || 'Unknown error occurred'
+      const errorMessage =
+        err?.message === 'Failed to fetch'
+          ? 'Unable to reach the backend API. Check Laravel is running and the Vite proxy is active.'
+          : err.message || 'Unknown error occurred'
       error.value = errorMessage
       throw new ApiError(errorMessage, 0, null)
     } finally {

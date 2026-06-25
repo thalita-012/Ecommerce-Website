@@ -52,13 +52,13 @@
     </div>
 
     <section v-else>
-      <div v-if="products.length === 0" class="empty-state">
+      <div v-if="displayProducts.length === 0" class="empty-state">
         No products found. Try another search or category.
       </div>
 
       <div v-else class="products-grid">
         <article
-          v-for="product in products"
+          v-for="product in displayProducts"
           :key="product.id"
           class="product-card"
           @click="goToProduct(product.id)"
@@ -105,7 +105,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProducts } from '@/composables/useProducts'
 import { useCategories } from '@/composables/useCategories'
@@ -123,6 +123,50 @@ const { addItem } = useCart()
 const searchQuery = ref('')
 const selectedCategory = ref(null)
 
+const normalizeText = (value) => (value ?? '').toString().trim().toLowerCase()
+
+const categoryLabelForProduct = (product) => {
+  return (
+    product.category?.id ??
+    product.category_id ??
+    product.category?.name ??
+    product.category_name ??
+    null
+  )
+}
+
+const categoryMatches = (product, selected) => {
+  if (selected == null) return true
+
+  const productCategoryId = product.category?.id ?? product.category_id ?? product.categoryId
+  if (productCategoryId != null && String(productCategoryId) === String(selected)) {
+    return true
+  }
+
+  const productCategoryName = normalizeText(
+    product.category?.name ?? product.category_name ?? product.category
+  )
+  const selectedCategoryName = normalizeText(
+    categories.value.find((cat) => String(cat.id) === String(selected))?.name
+  )
+
+  return (
+    productCategoryName !== '' &&
+    selectedCategoryName !== '' &&
+    productCategoryName === selectedCategoryName
+  )
+}
+
+const displayProducts = computed(() => {
+  let list = [...products.value]
+
+  if (selectedCategory.value != null) {
+    list = list.filter((product) => categoryMatches(product, selectedCategory.value))
+  }
+
+  return list
+})
+
 const wishlistSet = computed(() => {
   return new Set(
     wishlistItems.value.map((item) => item.product_id ?? item.productId ?? item.id)
@@ -136,9 +180,7 @@ const imageUrl = (path) => {
 }
 
 const loadProducts = async () => {
-  await getProducts({
-    category: selectedCategory.value || undefined,
-  })
+  await getProducts()
 }
 
 const handleSearch = async () => {
@@ -179,10 +221,6 @@ const toggleWishlist = async (productId) => {
 const handleAddToCart = (product) => {
   addItem(product)
 }
-
-watch(selectedCategory, async () => {
-  await loadProducts()
-})
 
 onMounted(async () => {
   const tasks = [loadProducts(), fetchCategories()]

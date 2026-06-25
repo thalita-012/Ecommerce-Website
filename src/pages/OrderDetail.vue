@@ -120,12 +120,6 @@
         </div>
       </div>
 
-      <!-- Cancel Button -->
-      <div v-if="order.status?.toLowerCase() === 'pending'" class="order-actions">
-        <button @click="cancelOrder" class="cancel-btn">
-          Cancel Order
-        </button>
-      </div>
     </div>
 
     <!-- Not Found -->
@@ -140,6 +134,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import Swal from 'sweetalert2';
 import { useOrders } from '@/composables/useOrders';
 
 // Router
@@ -147,7 +142,7 @@ const router = useRouter();
 const route = useRoute();
 
 // Composables
-const { getOrder, cancelOrder: cancelOrderApi } = useOrders();
+const { getOrder } = useOrders();
 
 // State
 const order = ref(null);
@@ -177,6 +172,12 @@ const fetchOrder = async () => {
     } else {
       error.value = err.message || 'Failed to load order details. Please try again.';
     }
+    await Swal.fire({
+      icon: 'error',
+      title: 'Order load failed',
+      text: error.value,
+      confirmButtonColor: '#ef4444',
+    });
   } finally {
     loading.value = false;
   }
@@ -203,20 +204,6 @@ const formatDate = (dateString) => {
 // Handle image error
 const handleImageError = (event) => {
   event.target.src = '/placeholder-image.jpg';
-};
-
-// Cancel order
-const cancelOrder = async () => {
-  if (!confirm('Are you sure you want to cancel this order?')) return;
-  
-  try {
-    await cancelOrderApi(order.value.id);
-    await fetchOrder();
-    alert('Order cancelled successfully');
-  } catch (err) {
-    console.error('Error cancelling order:', err);
-    alert(err.message || 'Failed to cancel order. Please try again.');
-  }
 };
 
 // Fetch order on component mount

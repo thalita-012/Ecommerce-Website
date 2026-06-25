@@ -144,6 +144,7 @@
 <script setup>
 import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { useCart } from '@/composables/useCart'
 
 const router = useRouter()
@@ -192,15 +193,36 @@ const handleCheckout = () => {
     })
   } catch (err) {
     console.error('Checkout error:', err)
-    alert('Error preparing checkout. Please try again.')
+    Swal.fire({
+      icon: 'error',
+      title: 'Checkout error',
+      text: 'Error preparing checkout. Please try again.',
+      confirmButtonColor: '#ef4444',
+    })
   }
 }
 
 const confirmClear = () => {
-  if (confirm('Are you sure you want to clear your cart?')) {
-    clearCart()
-    alert('Cart cleared!')
-  }
+  Swal.fire({
+    icon: 'warning',
+    title: 'Clear cart?',
+    text: 'Are you sure you want to clear your cart?',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, clear it',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+  }).then((result) => {
+    if (result.isConfirmed) {
+      clearCart()
+      Swal.fire({
+        icon: 'success',
+        title: 'Cart cleared',
+        text: 'Your cart has been cleared.',
+        confirmButtonColor: '#ef4444',
+      })
+    }
+  })
 }
 </script>
 

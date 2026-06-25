@@ -14,11 +14,13 @@ export function useAuth() {
   };
 
   // Login user
-  const login = async (email, password) => {
-    return await authStore.login({
-      email,
-      password,
-    });
+  const login = async (emailOrPayload, password) => {
+    const payload =
+      typeof emailOrPayload === 'object' && emailOrPayload !== null
+        ? emailOrPayload
+        : { email: emailOrPayload, password };
+
+    return await authStore.login(payload);
   };
 
   // Logout user

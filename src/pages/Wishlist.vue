@@ -50,9 +50,14 @@
 
 <script setup>
 import { onMounted } from 'vue'
+import Swal from 'sweetalert2'
+import { useRouter } from 'vue-router'
 import { useWishlist } from '@/composables/useWishlist'
 import { useCart } from '@/composables/useCart'
+import { useAuthStore } from '@/stores/auth'
 
+const router = useRouter()
+const authStore = useAuthStore()
 const { items: wishlistItems, loading: wishlistLoading, error: wishlistError, fetchWishlist, removeFromWishlist } = useWishlist()
 const { addItem: addToCart } = useCart()
 
@@ -63,10 +68,27 @@ const imageUrl = (path) => {
 }
 
 onMounted(async () => {
+  if (!authStore.isAuthenticated) {
+    await Swal.fire({
+      icon: 'info',
+      title: 'Login required',
+      text: 'Please login to view and manage your wishlist.',
+      confirmButtonColor: '#ef4444',
+    })
+    router.push({ name: 'Login', query: { redirect: '/wishlist' } })
+    return
+  }
+
   try {
     await fetchWishlist()
   } catch (err) {
     console.error('Failed to load wishlist:', err)
+    await Swal.fire({
+      icon: 'error',
+      title: 'Wishlist unavailable',
+      text: err?.message || 'Failed to load wishlist. Please try again.',
+      confirmButtonColor: '#ef4444',
+    })
   }
 })
 
@@ -75,14 +97,32 @@ const handleRemoveFromWishlist = async (wishlistId) => {
     await removeFromWishlist(wishlistId)
   } catch (err) {
     console.error('Failed to remove from wishlist:', err)
+    await Swal.fire({
+      icon: 'error',
+      title: 'Remove failed',
+      text: err?.message || 'Failed to remove wishlist item.',
+      confirmButtonColor: '#ef4444',
+    })
   }
 }
 
 const handleAddToCart = async (product) => {
   try {
     await addToCart(product)
+    await Swal.fire({
+      icon: 'success',
+      title: 'Added to cart',
+      text: `${product?.name || 'Item'} moved to your cart.`,
+      confirmButtonColor: '#ef4444',
+    })
   } catch (err) {
     console.error('Failed to add to cart:', err)
+    await Swal.fire({
+      icon: 'error',
+      title: 'Cart failed',
+      text: err?.message || 'Failed to add item to cart.',
+      confirmButtonColor: '#ef4444',
+    })
   }
 }
 </script>

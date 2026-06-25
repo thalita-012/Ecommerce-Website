@@ -62,10 +62,10 @@ const handleLogin = async () => {
   loading.value = true
 
   try {
-    await login({
-      email: formData.value.email.trim().toLowerCase(),
-      password: formData.value.password,
-    })
+    await login(
+      formData.value.email.trim().toLowerCase(),
+      formData.value.password
+    )
 
     router.push({ name: 'Home' })
   } catch (err) {

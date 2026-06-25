@@ -214,6 +214,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { useCart } from '@/composables/useCart'
 import { useOrders } from '@/composables/useOrders'
 import { useAuth } from '@/composables/useAuth'
@@ -274,6 +275,16 @@ const handleCheckout = async () => {
 
     const response = await createOrder({
       ...orderData,
+      shipping_address: {
+        full_name: formData.value.full_name,
+        email: formData.value.email,
+        phone: formData.value.phone,
+        address_line1: formData.value.street,
+        city: formData.value.city,
+        state: formData.value.state,
+        postal_code: formData.value.zip,
+        country: formData.value.country,
+      },
       billing_address: {
         full_name: formData.value.full_name,
         email: formData.value.email,
@@ -295,18 +306,33 @@ const handleCheckout = async () => {
     orderId.value = response?.id || response?.data?.id || response?.order?.id || null
     orderPlaced.value = true
     clearCart()
-    window.alert(`Order placed successfully${orderId.value ? `! Order #${orderId.value}` : '!'}`)
+    await Swal.fire({
+      icon: 'success',
+      title: 'Order placed',
+      text: orderId.value
+        ? `Your order #${orderId.value} has been created.`
+        : 'Your order has been created.',
+      confirmButtonText: 'Great',
+      confirmButtonColor: '#ef4444',
+    })
 
     // Auto-redirect after 5 seconds
     setTimeout(() => {
       router.push({ name: 'Home' })
     }, 5000)
   } catch (err) {
-    error.value =
+    const message =
       err?.data?.message ||
       (err?.data?.errors ? Object.values(err.data.errors).flat().join(' ') : null) ||
       err.message ||
       'Failed to place order. Please try again.'
+    error.value = message
+    await Swal.fire({
+      icon: 'error',
+      title: 'Order failed',
+      text: message,
+      confirmButtonColor: '#ef4444',
+    })
   } finally {
     loading.value = false
   }

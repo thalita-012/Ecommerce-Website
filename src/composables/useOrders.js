@@ -9,19 +9,29 @@ export function useOrders() {
   const loading = ref(false);
   const error = ref(null);
 
+  const extractList = (response) => {
+    return (
+      response?.data?.data ||
+      response?.data?.orders ||
+      response?.data ||
+      response?.orders ||
+      (Array.isArray(response) ? response : [])
+    );
+  };
+
+  const extractItem = (response) => {
+    return response?.data?.order || response?.data?.data || response?.data || response?.order || response;
+  };
+
   const getOrders = async () => {
     loading.value = true;
     error.value = null;
     try {
       const response = await get('/orders');
-      orders.value = Array.isArray(response?.data)
-        ? response.data
-        : Array.isArray(response)
-          ? response
-          : response?.data?.data || response?.data || [];
+      orders.value = extractList(response);
       return orders.value;
     } catch (err) {
-      error.value = err.message;
+      error.value = err?.data?.message || err.message || 'Failed to load orders';
       throw err;
     } finally {
       loading.value = false;
@@ -33,10 +43,10 @@ export function useOrders() {
     error.value = null;
     try {
       const response = await get(`/orders/${orderId}`);
-      order.value = response?.data || response;
+      order.value = extractItem(response);
       return order.value;
     } catch (err) {
-      error.value = err.message;
+      error.value = err?.data?.message || err.message || 'Failed to load order';
       throw err;
     } finally {
       loading.value = false;
@@ -48,24 +58,10 @@ export function useOrders() {
     error.value = null;
     try {
       const response = await post('/orders', data);
-      order.value = response?.data || response;
+      order.value = extractItem(response);
       return order.value;
     } catch (err) {
-      error.value = err.message;
-      throw err;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  const cancelOrder = async (orderId) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await post(`/orders/${orderId}/cancel`, {});
-      return response;
-    } catch (err) {
-      error.value = err.message;
+      error.value = err?.data?.message || err.message || 'Failed to create order';
       throw err;
     } finally {
       loading.value = false;
@@ -80,6 +76,5 @@ export function useOrders() {
     getOrders,
     getOrder,
     createOrder,
-    cancelOrder,
   };
 }

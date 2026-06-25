@@ -38,6 +38,7 @@
 
 <script setup>
 import { onMounted } from 'vue'
+import Swal from 'sweetalert2'
 import { useOrders } from '@/composables/useOrders'
 
 const { orders, loading, error, getOrders } = useOrders()
@@ -52,6 +53,12 @@ onMounted(async () => {
     await getOrders()
   } catch (err) {
     console.error('Error fetching orders:', err)
+    await Swal.fire({
+      icon: 'error',
+      title: 'Orders unavailable',
+      text: err?.message || 'Failed to load orders. Please try again.',
+      confirmButtonColor: '#ef4444',
+    })
   }
 })
 </script>

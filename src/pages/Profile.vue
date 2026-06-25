@@ -63,6 +63,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import Swal from 'sweetalert2'
 import { useApi } from '../composables/useApi'
 import { useAuthStore } from '../stores/auth'
 
@@ -84,9 +85,19 @@ const updateProfile = async () => {
       email: email.value
     })
     authStore.setAuth(response.data.user, authStore.token)
-    alert('Profile updated successfully')
+    await Swal.fire({
+      icon: 'success',
+      title: 'Profile updated',
+      text: 'Your profile was updated successfully.',
+      confirmButtonColor: '#ef4444',
+    })
   } catch (error) {
-    alert('Error updating profile')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Update failed',
+      text: 'Error updating profile',
+      confirmButtonColor: '#ef4444',
+    })
   } finally {
     loading.value = false
   }
@@ -105,12 +116,22 @@ const changePassword = async () => {
       password: newPassword.value,
       password_confirmation: confirmPassword.value
     })
-    alert('Password changed successfully')
+    await Swal.fire({
+      icon: 'success',
+      title: 'Password changed',
+      text: 'Your password was changed successfully.',
+      confirmButtonColor: '#ef4444',
+    })
     currentPassword.value = ''
     newPassword.value = ''
     confirmPassword.value = ''
   } catch (error) {
-    alert(error.response?.data?.message || 'Error changing password')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Password change failed',
+      text: error.response?.data?.message || 'Error changing password',
+      confirmButtonColor: '#ef4444',
+    })
   } finally {
     loading.value = false
   }
