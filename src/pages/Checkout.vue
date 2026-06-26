@@ -20,6 +20,9 @@
               <div class="item-info">
                 <h4>{{ item.name }}</h4>
                 <p class="quantity">Qty: {{ item.quantity }}</p>
+                <p v-if="isItemOverStock(item)" class="stock-warning">
+                  Out of stock or low stock. Please notify admin to restock this item.
+                </p>
               </div>
               <div class="item-price">
                 ${{ (item.price * item.quantity).toFixed(2) }}
@@ -40,6 +43,10 @@
               <span>Total:</span>
               <span>${{ total.toFixed(2) }}</span>
             </div>
+          </div>
+
+          <div v-if="hasStockIssue" class="stock-summary-warning">
+            One or more items exceed available stock. Please remove the item or notify admin to add more.
           </div>
         </div>
       </div>
@@ -182,7 +189,7 @@
           <button
             type="submit"
             class="btn-place-order"
-            :disabled="loading"
+            :disabled="loading || hasStockIssue"
           >
             {{ loading ? 'Processing...' : 'Place Order' }}
           </button>
@@ -202,8 +209,8 @@
           <router-link to="/products" class="btn-continue">
             Continue Shopping
           </router-link>
-          <router-link :to="`/orders/${orderId}`" class="btn-view-order">
-            View Order
+          <router-link :to="{ name: 'Orders' }" class="btn-view-order">
+            View Orders
           </router-link>
         </div>
       </div>
@@ -212,7 +219,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
 import { useCart } from '@/composables/useCart'
@@ -243,6 +250,14 @@ const formData = ref({
   cvv: '',
 })
 
+const isItemOverStock = (item) => {
+  const stock = Number(item?.stock ?? item?.product?.stock ?? Infinity)
+  if (!Number.isFinite(stock)) return false
+  return stock <= 0 || Number(item?.quantity || 0) > stock
+}
+
+const hasStockIssue = computed(() => cartItems.value.some((item) => isItemOverStock(item)))
+
 onMounted(() => {
   // Check if user is authenticated
   if (!isAuthenticated.value) {
@@ -269,6 +284,18 @@ const handleCheckout = async () => {
 
   error.value = null
   loading.value = true
+
+  if (hasStockIssue.value) {
+    loading.value = false
+    error.value = 'Some items are out of stock. Please notify admin to restock or remove the item before checkout.'
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Stock issue',
+      text: error.value,
+      confirmButtonColor: '#ef4444',
+    })
+    return
+  }
 
   try {
     const orderData = prepareForCheckout()
@@ -316,9 +343,9 @@ const handleCheckout = async () => {
       confirmButtonColor: '#ef4444',
     })
 
-    // Auto-redirect after 5 seconds
+    // Auto-redirect to order history after a short confirmation pause
     setTimeout(() => {
-      router.push({ name: 'Home' })
+      router.push({ name: 'Orders' })
     }, 5000)
   } catch (err) {
     const message =
@@ -417,6 +444,21 @@ h2 {
   color: #666;
   font-size: 14px;
   margin: 0;
+}
+
+.stock-warning,
+.stock-summary-warning {
+  margin: 8px 0 0;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.stock-summary-warning {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fee2e2;
 }
 
 .item-price {

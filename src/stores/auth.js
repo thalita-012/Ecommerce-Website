@@ -8,7 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
   const api = useApi()
 
   // State
-  const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
+  const user = ref(null)
   const loading = ref(false)
   const error = ref(null)
 
@@ -23,12 +23,6 @@ export const useAuthStore = defineStore('auth', () => {
   const setAuth = (userData, authToken) => {
     user.value = userData
     api.setToken(authToken)
-
-    try {
-      localStorage.setItem('user', JSON.stringify(userData))
-    } catch (err) {
-      console.error('Failed to save user data:', err)
-    }
   }
 
   /**
@@ -37,12 +31,6 @@ export const useAuthStore = defineStore('auth', () => {
   const clearAuth = () => {
     user.value = null
     api.removeToken()
-
-    try {
-      localStorage.removeItem('user')
-    } catch (err) {
-      console.error('Failed to clear user data:', err)
-    }
   }
 
   /**
@@ -181,12 +169,6 @@ export const useAuthStore = defineStore('auth', () => {
       const userData = response.user || response.data || response
 
       user.value = userData
-      try {
-        localStorage.setItem('user', JSON.stringify(userData))
-      } catch {
-        console.error('Failed to update user in localStorage')
-      }
-
       return userData
     } catch (err) {
       error.value = err.message || 'Failed to update profile'

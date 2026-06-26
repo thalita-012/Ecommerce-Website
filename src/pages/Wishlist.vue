@@ -5,17 +5,14 @@
         <div>
           <p class="eyebrow">Saved items</p>
           <h1>Your wishlist</h1>
-          <p class="lead">
-            A lightweight wishlist view with only the basic product info returned by the API.
-          </p>
         </div>
         <router-link to="/products" class="btn-shop">Browse products</router-link>
       </div>
 
       <div v-if="wishlistLoading" class="state-box">Loading your wishlist...</div>
 
-      <div v-else-if="wishlistError" class="state-box error">
-        {{ wishlistError }}
+      <div v-else-if="wishlistError" class="state-box">
+        Unable to load wishlist right now.
       </div>
 
       <div v-else-if="wishlistItems.length === 0" class="state-box">
@@ -116,12 +113,6 @@ onMounted(async () => {
     await fetchWishlist()
   } catch (err) {
     console.error('Failed to load wishlist:', err)
-    await Swal.fire({
-      icon: 'error',
-      title: 'Wishlist unavailable',
-      text: err?.message || 'Failed to load wishlist. Please try again.',
-      confirmButtonColor: '#ef4444',
-    })
   }
 })
 
@@ -149,12 +140,6 @@ const handleRemoveFromWishlist = async (wishlistId) => {
     })
   } catch (err) {
     console.error('Failed to remove from wishlist:', err)
-    await Swal.fire({
-      icon: 'error',
-      title: 'Remove failed',
-      text: err?.message || 'Failed to remove wishlist item.',
-      confirmButtonColor: '#ef4444',
-    })
   }
 }
 
@@ -181,12 +166,6 @@ const handleAddToCart = async (item) => {
     })
   } catch (err) {
     console.error('Failed to add to cart:', err)
-    await Swal.fire({
-      icon: 'error',
-      title: 'Cart failed',
-      text: err?.message || 'Failed to add item to cart.',
-      confirmButtonColor: '#ef4444',
-    })
   }
 }
 </script>

@@ -72,14 +72,14 @@
             />
             <div v-else class="image-placeholder">Fresh pick</div>
 
-            <button
-              @click.stop="toggleWishlist(product.id)"
+            <WishlistButton
               class="btn-wishlist"
-              :class="{ wishlisted: isInWishlist(product.id) }"
+              :active="isInWishlist(product.id)"
+              :loading="wishlistBusyId === String(product.id)"
               :title="isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'"
-            >
-              {{ isInWishlist(product.id) ? '♥' : '♡' }}
-            </button>
+              aria-label="Toggle wishlist"
+              @click="toggleWishlist(product.id)"
+            />
           </div>
 
           <div class="product-details">
@@ -112,6 +112,7 @@ import { useCategories } from '@/composables/useCategories'
 import { useWishlist } from '@/composables/useWishlist'
 import { useAuthStore } from '@/stores/auth'
 import { useCart } from '@/composables/useCart'
+import WishlistButton from '@/components/WishlistButton.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -122,18 +123,9 @@ const { addItem } = useCart()
 
 const searchQuery = ref('')
 const selectedCategory = ref(null)
+const wishlistBusyId = ref(null)
 
 const normalizeText = (value) => (value ?? '').toString().trim().toLowerCase()
-
-const categoryLabelForProduct = (product) => {
-  return (
-    product.category?.id ??
-    product.category_id ??
-    product.category?.name ??
-    product.category_name ??
-    null
-  )
-}
 
 const categoryMatches = (product, selected) => {
   if (selected == null) return true
@@ -169,7 +161,10 @@ const displayProducts = computed(() => {
 
 const wishlistSet = computed(() => {
   return new Set(
-    wishlistItems.value.map((item) => item.product_id ?? item.productId ?? item.id)
+    wishlistItems.value
+      .map((item) => item.product_id ?? item.productId ?? item.id)
+      .filter((value) => value != null)
+      .map((value) => String(value))
   )
 })
 
@@ -197,24 +192,34 @@ const goToProduct = (productId) => {
   router.push({ name: 'ProductDetail', params: { id: productId } })
 }
 
-const isInWishlist = (productId) => wishlistSet.value.has(productId)
+const isInWishlist = (productId) => wishlistSet.value.has(String(productId))
+
+const wishlistItemIdForProduct = (productId) => {
+  const match = wishlistItems.value.find((entry) => {
+    const entryProductId = entry.product_id ?? entry.productId ?? entry.id
+    return entryProductId != null && String(entryProductId) === String(productId)
+  })
+
+  return match?.id ?? null
+}
 
 const toggleWishlist = async (productId) => {
+  if (wishlistBusyId.value === String(productId)) return
+  wishlistBusyId.value = String(productId)
   try {
     if (!authStore.isAuthenticated) {
       router.push({ name: 'Login', query: { redirect: '/products' } })
       return
     }
     if (isInWishlist(productId)) {
-      const item = wishlistItems.value.find(
-        (entry) => (entry.product_id ?? entry.productId ?? entry.id) === productId
-      )
-      await removeFromWishlist(item?.id ?? productId)
+      await removeFromWishlist(wishlistItemIdForProduct(productId) ?? productId)
     } else {
       await addToWishlist(productId)
     }
   } catch (err) {
     console.error('Wishlist error:', err)
+  } finally {
+    wishlistBusyId.value = null
   }
 }
 
@@ -392,14 +397,7 @@ onMounted(async () => {
   right: 14px;
   width: 42px;
   height: 42px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 0;
   font-size: 1.1rem;
-}
-
-.btn-wishlist.wishlisted {
-  color: #ef4444;
 }
 
 .product-details {

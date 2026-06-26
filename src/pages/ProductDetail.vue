@@ -39,14 +39,14 @@
             </div>
 
             <!-- Wishlist Button -->
-            <button 
-              @click="toggleWishlist" 
+            <WishlistButton
               class="btn-wishlist-large"
-              :class="{ wishlisted: isInWishlist }"
+              :active="isInWishlist"
+              :loading="wishlistLoading"
               :title="isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'"
-            >
-              ♡
-            </button>
+              aria-label="Toggle wishlist"
+              @click="toggleWishlist"
+            />
           </div>
 
           <!-- Stock Status -->
@@ -235,6 +235,7 @@ import { useCart } from '@/composables/useCart'
 import { useWishlist } from '@/composables/useWishlist'
 import { useReviews } from '@/composables/useReviews'
 import { useAuthStore } from '@/stores/auth'
+import WishlistButton from '@/components/WishlistButton.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -251,6 +252,7 @@ const quantity = ref(1)
 const isAddingToCart = ref(false)
 const isSubmittingReview = ref(false)
 const isInWishlist = ref(false)
+const wishlistLoading = ref(false)
 
 const newReview = ref({
   rating: 5,
@@ -337,6 +339,8 @@ const handleAddToCart = async () => {
 }
 
 const toggleWishlist = async () => {
+  if (wishlistLoading.value) return
+  wishlistLoading.value = true
   try {
     if (!isAuthenticated.value) {
       router.push({ name: 'Login', query: { redirect: route.fullPath } })
@@ -351,6 +355,8 @@ const toggleWishlist = async () => {
     }
   } catch (err) {
     console.error('Wishlist error:', err)
+  } finally {
+    wishlistLoading.value = false
   }
 }
 

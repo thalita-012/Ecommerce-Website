@@ -183,14 +183,9 @@ const incrementQty = (itemId) => {
 
 const handleCheckout = () => {
   try {
-    const order = prepareForCheckout()
-    console.log('Order prepared:', order)
-    
-    // Navigate to checkout page
-    router.push({
-      name: 'Checkout',
-      state: { order }
-    })
+    // Checkout page reads the persisted cart, so we only need to route there.
+    prepareForCheckout()
+    router.push({ name: 'Checkout' })
   } catch (err) {
     console.error('Checkout error:', err)
     Swal.fire({

@@ -5,9 +5,6 @@
         <div>
           <p class="eyebrow">Your orders</p>
           <h1>Order history</h1>
-          <p class="lead">
-            Browse your recent orders with a lightweight summary. Open any order only when you need the full details.
-          </p>
         </div>
 
         <router-link to="/products" class="btn-shop">Continue shopping</router-link>
@@ -29,12 +26,18 @@
       </div>
 
       <div v-if="loading && !orders.length" class="state-box">Loading orders...</div>
-      <div v-else-if="error" class="state-box error">{{ error }}</div>
-      <div v-else-if="orders.length === 0" class="state-box">
+      <div v-if="error" class="state-box" :class="isUsingCache ? 'warning' : 'error'">
+        <p>{{ error }}</p>
+        <p v-if="isUsingCache && cachedAt" class="cache-meta">
+          Last saved: {{ formatCachedAt(cachedAt) }}
+        </p>
+        <button class="btn-retry" @click="loadOrders(currentPage)">Try Again</button>
+      </div>
+      <div v-if="!loading && orders.length === 0 && !error" class="state-box">
         You haven't placed any orders yet.
       </div>
 
-      <div v-else class="orders-table-wrap">
+      <div v-if="orders.length" class="orders-table-wrap">
         <div class="orders-table">
           <div class="orders-head">
             <span>Order ID</span>
@@ -85,10 +88,9 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import Swal from 'sweetalert2'
 import { useOrders } from '@/composables/useOrders'
 
-const { orders, loading, error, getOrders, pagination } = useOrders()
+const { orders, loading, error, getOrders, pagination, isUsingCache, cachedAt } = useOrders()
 const currentPage = ref(1)
 
 const formatDate = (value) => {
@@ -109,18 +111,23 @@ const statusClass = (status) => {
   return (status || 'pending').toLowerCase()
 }
 
+const formatCachedAt = (value) => {
+  if (!value) return 'N/A'
+  return new Date(value).toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 const loadOrders = async (page = 1) => {
   try {
     currentPage.value = page
     await getOrders(page)
   } catch (err) {
     console.error('Error fetching orders:', err)
-    await Swal.fire({
-      icon: 'error',
-      title: 'Orders unavailable',
-      text: err?.message || 'Failed to load orders. Please try again.',
-      confirmButtonColor: '#ef4444',
-    })
   }
 }
 
@@ -197,6 +204,17 @@ onMounted(() => {
   box-shadow: 0 14px 28px rgba(249, 115, 22, 0.2);
 }
 
+.btn-retry {
+  margin-top: 14px;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+}
+
 .stats-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -238,6 +256,16 @@ onMounted(() => {
 
 .state-box.error {
   color: #b91c1c;
+}
+
+.state-box.warning {
+  color: #92400e;
+}
+
+.cache-meta {
+  margin-top: 8px;
+  color: #92400e;
+  font-size: 0.92rem;
 }
 
 .orders-table-wrap {

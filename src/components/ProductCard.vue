@@ -19,14 +19,16 @@
       </div>
 
       <!-- Wishlist Button -->
-      <button
-        @click="toggleWishlist"
+      <WishlistButton
         class="btn-wishlist"
-        :class="{ active: isWishlisted }"
-        aria-label="Add to wishlist"
-      >
-        <i :class="isWishlisted ? 'icon-heart-filled' : 'icon-heart'"></i>
-      </button>
+        :active="isWishlisted"
+        :loading="wishlistLoading"
+        :title="isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'"
+        aria-label="Toggle wishlist"
+        active-icon="♥"
+        inactive-icon="♡"
+        @click="toggleWishlist"
+      />
     </div>
 
     <!-- Product Info -->
@@ -100,6 +102,7 @@ import { useCart } from '@/composables/useCart'
 import { useWishlist } from '@/composables/useWishlist'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import WishlistButton from '@/components/WishlistButton.vue'
 
 const props = defineProps({
   product: {
@@ -125,6 +128,7 @@ const router = useRouter()
 
 const addingToCart = ref(false)
 const isWishlisted = ref(false)
+const wishlistLoading = ref(false)
 
 // Computed Properties
 const stockStatus = computed(() => {
@@ -149,7 +153,10 @@ const truncateText = (text, length) => {
   return text.length > length ? text.substring(0, length) + '...' : text
 }
 
-const addToCart = async () => {
+  const addToCart = async () => {
+  if (Number(props.product.stock ?? 0) <= 0) {
+    return
+  }
   addingToCart.value = true
   try {
     await addToCart_fn(props.product, 1)
@@ -161,6 +168,8 @@ const addToCart = async () => {
 }
 
 const toggleWishlist = async () => {
+  if (wishlistLoading.value) return
+  wishlistLoading.value = true
   try {
     if (!authStore.isAuthenticated) {
       router.push({ name: 'Login', query: { redirect: '/products' } })
@@ -175,6 +184,8 @@ const toggleWishlist = async () => {
     }
   } catch (error) {
     console.error('Failed to toggle wishlist:', error)
+  } finally {
+    wishlistLoading.value = false
   }
 }
 </script>

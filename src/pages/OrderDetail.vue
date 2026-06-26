@@ -149,6 +149,20 @@ const order = ref(null);
 const loading = ref(true);
 const error = ref('');
 
+const getFriendlyErrorMessage = (err, fallback) => {
+  const status = err?.status ?? err?.response?.status ?? err?.data?.status ?? 0;
+  const rawMessage = err?.data?.message || err?.message || '';
+  const looksLikeServerFailure =
+    status >= 500 ||
+    /Allowed memory size|maximum execution time|stack trace|SQLSTATE|fatal error/i.test(rawMessage);
+
+  if (looksLikeServerFailure) {
+    return fallback;
+  }
+
+  return rawMessage || fallback;
+};
+
 // Fetch order details
 const fetchOrder = async () => {
   const orderId = route.params.id;
@@ -167,10 +181,13 @@ const fetchOrder = async () => {
     order.value = response;
   } catch (err) {
     console.error('Error fetching order:', err);
-    if (err.response?.status === 404) {
+    if ((err?.status ?? err?.response?.status) === 404) {
       error.value = 'Order not found';
     } else {
-      error.value = err.message || 'Failed to load order details. Please try again.';
+      error.value = getFriendlyErrorMessage(
+        err,
+        'Order details are temporarily unavailable. Please try again.'
+      );
     }
     await Swal.fire({
       icon: 'error',

@@ -2,8 +2,43 @@ import { ref, computed } from 'vue'
 
 // Local cart state (you can also sync with API)
 const cartItems = ref([])
+let cartHydrated = false
+
+const normalizeId = (value) => (value == null ? null : String(value))
+
+const readCartFromStorage = () => {
+  try {
+    if (typeof window === 'undefined') return []
+
+    const saved = localStorage.getItem('cart')
+    if (!saved) return []
+
+    const parsed = JSON.parse(saved)
+    return Array.isArray(parsed) ? parsed : []
+  } catch (err) {
+    console.error('Failed to load cart:', err)
+    return []
+  }
+}
+
+const persistCartToStorage = () => {
+  try {
+    if (typeof window === 'undefined') return
+    localStorage.setItem('cart', JSON.stringify(cartItems.value))
+  } catch (err) {
+    console.error('Failed to save cart:', err)
+  }
+}
+
+const hydrateCart = () => {
+  if (cartHydrated) return
+  cartItems.value = readCartFromStorage()
+  cartHydrated = true
+}
 
 export function useCart() {
+  hydrateCart()
+
   const loading = ref(false)
   const error = ref(null)
 
@@ -25,22 +60,37 @@ export function useCart() {
     error.value = null
 
     try {
+      const maxStock = Number(product?.stock ?? product?.available_stock ?? Infinity)
+      const requestedQuantity = Number(quantity || 1)
+      if (Number.isFinite(maxStock) && maxStock >= 0 && requestedQuantity > maxStock) {
+        throw new Error('Requested quantity exceeds available stock.')
+      }
+
       // Check if item already in cart
-      const existingItem = cartItems.value.find(item => item.id === product.id)
+      const productId = normalizeId(product.id ?? product.product_id)
+      const existingItem = cartItems.value.find(item => normalizeId(item.id) === productId)
 
       if (existingItem) {
-        existingItem.quantity += quantity
+        const nextQuantity = existingItem.quantity + requestedQuantity
+        if (Number.isFinite(maxStock) && maxStock >= 0 && nextQuantity > maxStock) {
+          throw new Error('Cart quantity exceeds available stock.')
+        }
+
+        existingItem.quantity = nextQuantity
       } else {
         cartItems.value.push({
-          id: product.id,
-          product_id: product.id,
+          id: productId,
+          product_id: productId,
           name: product.name,
           price: product.price,
           image: product.image,
-          quantity,
+          quantity: requestedQuantity,
+          stock: Number.isFinite(maxStock) ? maxStock : null,
           product, // Store full product object for reference
         })
       }
+
+      persistCartToStorage()
 
       return true
     } catch (err) {
@@ -51,17 +101,24 @@ export function useCart() {
 
   // Remove item from cart
   const removeItem = (productId) => {
-    cartItems.value = cartItems.value.filter(item => item.id !== productId)
+    const normalizedId = normalizeId(productId)
+    cartItems.value = cartItems.value.filter(item => normalizeId(item.id) !== normalizedId)
+    persistCartToStorage()
   }
 
   // Update item quantity
   const updateQuantity = (productId, quantity) => {
-    const item = cartItems.value.find(i => i.id === productId)
+    const normalizedId = normalizeId(productId)
+    const item = cartItems.value.find(i => normalizeId(i.id) === normalizedId)
     if (item) {
+      const maxStock = Number(item.stock ?? item.product?.stock ?? item.product?.available_stock ?? Infinity)
       if (quantity <= 0) {
-        removeItem(productId)
+        removeItem(normalizedId)
+      } else if (Number.isFinite(maxStock) && maxStock >= 0 && quantity > maxStock) {
+        throw new Error('Cart quantity exceeds available stock.')
       } else {
         item.quantity = quantity
+        persistCartToStorage()
       }
     }
   }
@@ -69,6 +126,7 @@ export function useCart() {
   // Clear entire cart
   const clearCart = () => {
     cartItems.value = []
+    persistCartToStorage()
   }
 
   // Get cart items
@@ -78,12 +136,14 @@ export function useCart() {
 
   // Check if item in cart
   const isInCart = (productId) => {
-    return cartItems.value.some(item => item.id === productId)
+    const normalizedId = normalizeId(productId)
+    return cartItems.value.some(item => normalizeId(item.id) === normalizedId)
   }
 
   // Get item from cart
   const getCartItem = (productId) => {
-    return cartItems.value.find(item => item.id === productId)
+    const normalizedId = normalizeId(productId)
+    return cartItems.value.find(item => normalizeId(item.id) === normalizedId)
   }
 
   // Prepare cart for checkout
@@ -102,23 +162,13 @@ export function useCart() {
 
   // Load cart from localStorage
   const loadCart = () => {
-    try {
-      const saved = localStorage.getItem('cart')
-      if (saved) {
-        cartItems.value = JSON.parse(saved)
-      }
-    } catch (err) {
-      console.error('Failed to load cart:', err)
-    }
+    hydrateCart()
+    return cartItems.value
   }
 
   // Save cart to localStorage
   const saveCart = () => {
-    try {
-      localStorage.setItem('cart', JSON.stringify(cartItems.value))
-    } catch (err) {
-      console.error('Failed to save cart:', err)
-    }
+    persistCartToStorage()
   }
 
   // Watch for changes and auto-save
