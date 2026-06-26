@@ -7,7 +7,7 @@
       <div class="order-summary">
         <h2>Order Summary</h2>
 
-        <div v-if="cartItems.length === 0" class="empty-cart">
+        <div v-if="displayItems.length === 0" class="empty-cart">
           <p>Your cart is empty</p>
           <router-link to="/products" class="btn-continue-shopping">
             Continue Shopping
@@ -16,7 +16,7 @@
 
         <div v-else>
           <div class="order-items">
-            <div v-for="item in cartItems" :key="item.id" class="order-item">
+            <div v-for="item in displayItems" :key="item.id" class="order-item">
               <div class="item-info">
                 <h4>{{ item.name }}</h4>
                 <p class="quantity">Qty: {{ item.quantity }}</p>
@@ -33,15 +33,15 @@
           <div class="order-totals">
             <div class="total-row">
               <span>Subtotal:</span>
-              <span>${{ subtotal.toFixed(2) }}</span>
+              <span>${{ displaySubtotal.toFixed(2) }}</span>
             </div>
             <div class="total-row">
               <span>Tax (10%):</span>
-              <span>${{ tax.toFixed(2) }}</span>
+              <span>${{ displayTax.toFixed(2) }}</span>
             </div>
             <div class="total-row total-amount">
               <span>Total:</span>
-              <span>${{ total.toFixed(2) }}</span>
+              <span>${{ displayTotal.toFixed(2) }}</span>
             </div>
           </div>
 
@@ -52,7 +52,7 @@
       </div>
 
       <!-- Checkout Form -->
-      <div v-if="cartItems.length > 0" class="checkout-form">
+      <div v-if="displayItems.length > 0" class="checkout-form">
         <h2>Billing & Shipping</h2>
 
         <form @submit.prevent="handleCheckout">
@@ -198,7 +198,7 @@
     </div>
 
     <!-- Order Confirmation Modal -->
-    <div v-if="orderPlaced" class="confirmation-modal">
+  <div v-if="orderPlaced" class="confirmation-modal">
       <div class="modal-content">
         <div class="success-icon">✓</div>
         <h2>Order Placed Successfully!</h2>
@@ -227,6 +227,7 @@ import { useOrders } from '@/composables/useOrders'
 import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
+const CHECKOUT_DRAFT_KEY = 'checkout_draft'
 const { items: cartItems, subtotal, tax, total, prepareForCheckout, clearCart, loadCart } = useCart()
 const { createOrder, loading: orderLoading } = useOrders()
 const { isAuthenticated } = useAuth()
@@ -235,6 +236,7 @@ const loading = ref(false)
 const error = ref(null)
 const orderPlaced = ref(false)
 const orderId = ref(null)
+const checkoutDraft = ref(null)
 
 const formData = ref({
   full_name: '',
@@ -256,7 +258,29 @@ const isItemOverStock = (item) => {
   return stock <= 0 || Number(item?.quantity || 0) > stock
 }
 
-const hasStockIssue = computed(() => cartItems.value.some((item) => isItemOverStock(item)))
+const displayItems = computed(() => checkoutDraft.value?.items?.length ? checkoutDraft.value.items : cartItems.value)
+const displaySubtotal = computed(() => checkoutDraft.value?.subtotal ?? subtotal.value)
+const displayTax = computed(() => checkoutDraft.value?.tax ?? tax.value)
+const displayTotal = computed(() => checkoutDraft.value?.total ?? total.value)
+const hasStockIssue = computed(() => displayItems.value.some((item) => isItemOverStock(item)))
+
+const loadCheckoutDraft = () => {
+  try {
+    const saved = sessionStorage.getItem(CHECKOUT_DRAFT_KEY)
+    checkoutDraft.value = saved ? JSON.parse(saved) : null
+  } catch (err) {
+    console.error('Failed to load checkout draft:', err)
+    checkoutDraft.value = null
+  }
+}
+
+const clearCheckoutDraft = () => {
+  try {
+    sessionStorage.removeItem(CHECKOUT_DRAFT_KEY)
+  } catch (err) {
+    console.error('Failed to clear checkout draft:', err)
+  }
+}
 
 onMounted(() => {
   // Check if user is authenticated
@@ -267,6 +291,7 @@ onMounted(() => {
 
   // Load cart from localStorage
   loadCart()
+  loadCheckoutDraft()
 })
 
 const handleCheckout = async () => {
@@ -298,7 +323,7 @@ const handleCheckout = async () => {
   }
 
   try {
-    const orderData = prepareForCheckout()
+    const orderData = checkoutDraft.value || prepareForCheckout()
 
     const response = await createOrder({
       ...orderData,
@@ -333,6 +358,7 @@ const handleCheckout = async () => {
     orderId.value = response?.id || response?.data?.id || response?.order?.id || null
     orderPlaced.value = true
     clearCart()
+    clearCheckoutDraft()
     await Swal.fire({
       icon: 'success',
       title: 'Order placed',

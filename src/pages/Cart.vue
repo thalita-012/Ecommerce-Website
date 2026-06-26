@@ -148,6 +148,7 @@ import Swal from 'sweetalert2'
 import { useCart } from '@/composables/useCart'
 
 const router = useRouter()
+const CHECKOUT_DRAFT_KEY = 'checkout_draft'
 
 const {
   items,
@@ -183,8 +184,9 @@ const incrementQty = (itemId) => {
 
 const handleCheckout = () => {
   try {
-    // Checkout page reads the persisted cart, so we only need to route there.
-    prepareForCheckout()
+    const orderDraft = prepareForCheckout()
+    sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(orderDraft))
+    clearCart()
     router.push({ name: 'Checkout' })
   } catch (err) {
     console.error('Checkout error:', err)
