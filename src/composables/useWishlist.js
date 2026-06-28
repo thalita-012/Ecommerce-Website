@@ -1,20 +1,22 @@
 import { ref } from 'vue'
 import { useApi } from './useApi'
 
+const items = ref([])
+const loading = ref(false)
+const error = ref(null)
+const unseenCount = ref(0)
+
 export function useWishlist() {
   const { get, post, delete: delete_, getToken } = useApi()
-  const items = ref([])
-  const loading = ref(false)
-  const error = ref(null)
 
   const normalizeWishlistItem = (item) => {
     const product = item?.product || item?.product_info || item?.details || {}
     return {
       id: item?.id ?? product?.id ?? null,
       product_id: item?.product_id ?? product?.id ?? null,
-      name: item?.name ?? product?.name ?? 'Product',
-      image: item?.image ?? product?.image ?? product?.image_url ?? '',
-      price: item?.price ?? product?.price ?? 0,
+      name: item?.name ?? item?.product_name ?? product?.name ?? 'Product',
+      image: item?.image ?? item?.product_image ?? product?.image ?? product?.image_url ?? '',
+      price: item?.price ?? item?.product_price ?? product?.price ?? 0,
       category: item?.category?.name ?? product?.category?.name ?? item?.category_name ?? '',
       created_at: item?.created_at ?? item?.added_at ?? null,
       raw: item,
@@ -60,6 +62,7 @@ export function useWishlist() {
       // Add to local state using a small normalized shape
       const newItem = normalizeWishlistItem(response?.data?.wishlist || response?.data || response)
       items.value.push(newItem)
+      unseenCount.value++
       
       return response
     } catch (err) {
@@ -102,14 +105,20 @@ export function useWishlist() {
     }
   }
 
+  const clearUnseen = () => {
+    unseenCount.value = 0
+  }
+
   return {
     items,
     loading,
     error,
+    unseenCount,
     fetchWishlist,
     addToWishlist,
     removeFromWishlist,
     isInWishlist,
     toggleWishlist,
+    clearUnseen,
   }
 }

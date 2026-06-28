@@ -16,7 +16,7 @@ const safeParse = (value, fallback = null) => {
 
 const getCurrentUserCacheKey = () => {
   try {
-    const storedUser = safeParse(localStorage.getItem('user'));
+    const storedUser = safeParse(sessionStorage.getItem('user'));
     const userKey = storedUser?.id ?? storedUser?.email ?? 'guest';
     return `${ORDERS_CACHE_PREFIX}:${userKey}`;
   } catch {
@@ -39,6 +39,15 @@ const summarizeOrder = (order) => {
       }))
     : [];
 
+  let shippingAddress = order.shipping_address ?? null;
+  if (typeof shippingAddress === 'string') {
+    try {
+      shippingAddress = JSON.parse(shippingAddress);
+    } catch {
+      // Keep string if parsing fails
+    }
+  }
+
   return {
     id: order.id ?? null,
     created_at: order.created_at ?? order.updated_at ?? new Date().toISOString(),
@@ -52,7 +61,7 @@ const summarizeOrder = (order) => {
     shipping_cost: order.shipping_cost ?? 0,
     tax: order.tax ?? 0,
     discount: order.discount ?? 0,
-    shipping_address: order.shipping_address ?? null,
+    shipping_address: shippingAddress,
     items,
   };
 };
@@ -130,8 +139,13 @@ export function useOrders() {
   const cachedAt = ref(null);
 
   const extractList = (response) => {
+    if (response?.data?.data && Array.isArray(response.data.data.data)) {
+      return response.data.data.data;
+    }
+    if (Array.isArray(response?.data?.data)) {
+      return response.data.data;
+    }
     return (
-      response?.data?.data ||
       response?.data?.orders ||
       response?.data ||
       response?.orders ||
@@ -140,7 +154,9 @@ export function useOrders() {
   };
 
   const extractPagination = (response) => {
-    const meta = response?.data || response || {};
+    const meta = (response?.data?.data && response.data.data.current_page) 
+      ? response.data.data 
+      : (response?.data || response || {});
     return {
       currentPage: meta.current_page || meta.currentPage || 1,
       lastPage: meta.last_page || meta.lastPage || 1,

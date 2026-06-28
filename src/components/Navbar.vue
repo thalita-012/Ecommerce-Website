@@ -15,11 +15,17 @@
             <router-link to="/products" class="nav-link">Products</router-link>
           </li>
           <li class="nav-item">
-            <router-link to="/cart" class="nav-link position-relative">
-              Cart
-              <span v-if="cartTotal > 0" class="badge bg-danger position-absolute top-0 start-100 translate-middle">
-                {{ cartTotal }}
-              </span>
+            <router-link to="/cart" class="nav-link nav-icon-link" aria-label="Cart">
+              <span class="nav-icon">🛒</span>
+              <span class="nav-icon-text">Cart</span>
+              <span v-if="showCartBadge" class="nav-badge">{{ cartCount }}</span>
+            </router-link>
+          </li>
+          <li class="nav-item">
+            <router-link to="/wishlist" class="nav-link nav-icon-link" aria-label="Wishlist">
+              <span class="nav-icon">♡</span>
+              <span class="nav-icon-text">Wishlist</span>
+              <span v-if="showWishlistBadge" class="nav-badge">{{ unseenCount }}</span>
             </router-link>
           </li>
 
@@ -34,14 +40,11 @@
 
           <template v-else>
             <li class="nav-item">
-              <router-link to="/wishlist" class="nav-link">Wishlist</router-link>
-            </li>
-            <li class="nav-item">
               <router-link to="/orders" class="nav-link">Orders</router-link>
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle user-chip" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                {{ authStore.user.name }}
+                {{ authStore.user?.name || 'Account' }}
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
                 <li>
@@ -60,21 +63,51 @@
 </template>
 
 <script setup>
+import { computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useCart } from '../composables/useCart'
-import { useApi } from '../composables/useApi'
-import { useRouter } from 'vue-router'
+import { useWishlist } from '../composables/useWishlist'
+import { useRouter, useRoute } from 'vue-router'
 
 const authStore = useAuthStore()
-const { totalItems: cartTotal } = useCart()
-const { post } = useApi()
+const { itemCount: cartCount, loadCart } = useCart()
+const { items: wishlistItems, fetchWishlist, unseenCount, clearUnseen } = useWishlist()
 const router = useRouter()
+const route = useRoute()
+
+const showWishlistBadge = computed(() => {
+  return authStore.isAuthenticated && unseenCount.value > 0 && route.path !== '/wishlist'
+})
+
+const showCartBadge = computed(() => {
+  return cartCount.value > 0 && route.path !== '/cart'
+})
+
+watch(
+  () => route.path,
+  (newPath) => {
+    if (newPath === '/wishlist') {
+      clearUnseen()
+    }
+  },
+  { immediate: true }
+)
+
+onMounted(async () => {
+  loadCart()
+  if (authStore.isAuthenticated) {
+    try {
+      await fetchWishlist()
+    } catch {
+      // Keep the badge usable even if the backend is temporarily down.
+    }
+  }
+})
 
 const logout = async () => {
   try {
-    await post('/auth/logout', {})
+    await authStore.logout()
   } finally {
-    authStore.logout()
     router.push({ name: 'Login' })
   }
 }
@@ -120,6 +153,41 @@ const logout = async () => {
   padding: 8px 14px !important;
   border-radius: 999px;
   transition: all 0.2s ease;
+}
+
+.nav-icon-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 18px !important;
+}
+
+.nav-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.nav-icon-text {
+  display: inline-block;
+}
+
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
 }
 
 .nav-link:hover,

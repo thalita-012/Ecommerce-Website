@@ -153,7 +153,11 @@ const truncateText = (text, length) => {
   return text.length > length ? text.substring(0, length) + '...' : text
 }
 
-  const addToCart = async () => {
+const addToCart = async () => {
+  if (!authStore.isAuthenticated) {
+    router.push({ name: 'Login', query: { redirect: `/products/${props.product.id}` } })
+    return
+  }
   if (Number(props.product.stock ?? 0) <= 0) {
     return
   }
@@ -172,7 +176,7 @@ const toggleWishlist = async () => {
   wishlistLoading.value = true
   try {
     if (!authStore.isAuthenticated) {
-      router.push({ name: 'Login', query: { redirect: '/products' } })
+      router.push({ name: 'Login', query: { redirect: `/products/${props.product.id}` } })
       return
     }
     if (isWishlisted.value) {

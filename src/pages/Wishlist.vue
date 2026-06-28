@@ -3,63 +3,67 @@
     <section class="wishlist-shell">
       <div class="wishlist-hero">
         <div>
-          <p class="eyebrow">Saved items</p>
-          <h1>Your wishlist</h1>
+          <p class="eyebrow">Saved Items</p>
+          <h1 class="page-title">Your Wishlist</h1>
+          <p class="subtitle">Keep track of the fresh produce you love and want to pick next.</p>
         </div>
-        <router-link to="/products" class="btn-shop">Browse products</router-link>
+        <router-link to="/products" class="btn-shop">Browse Products</router-link>
       </div>
 
-      <div v-if="wishlistLoading" class="state-box">Loading your wishlist...</div>
-
-      <div v-else-if="wishlistError" class="state-box">
-        Unable to load wishlist right now.
+      <div v-if="wishlistLoading" class="state-box">
+        <div class="spinner"></div>
+        <p>Loading your saved items...</p>
       </div>
 
-      <div v-else-if="wishlistItems.length === 0" class="state-box">
-        Your wishlist is empty.
+      <div v-else-if="wishlistError" class="state-box error">
+        <p>Unable to load wishlist right now. Please try again.</p>
       </div>
 
-      <div v-else class="wishlist-items">
-        <article v-for="item in wishlistItems" :key="item.id || item.product_id" class="wishlist-item">
-          <div class="product-image-wrap">
+      <div v-else-if="wishlistItems.length === 0" class="state-box empty">
+        <div class="empty-icon">♡</div>
+        <h3>Your wishlist is empty</h3>
+        <p>Explore our fresh harvest and save items you want to keep track of.</p>
+        <router-link to="/products" class="btn-shop-empty">Explore Shop</router-link>
+      </div>
+
+      <div v-else class="wishlist-grid">
+        <article v-for="item in wishlistItems" :key="item.id || item.product_id" class="wishlist-card">
+          <div class="card-image-wrapper">
             <img
               v-if="item.image"
               :src="imageUrl(item.image)"
               :alt="item.name"
               class="product-image"
+              loading="lazy"
             />
-            <div v-else class="image-placeholder">No image</div>
+            <div v-else class="image-placeholder">Fresh pick</div>
+            <button @click="handleRemoveFromWishlist(item.id)" class="btn-remove-icon" title="Remove from wishlist">
+              ✕
+            </button>
           </div>
 
-          <div class="product-info">
+          <div class="card-content">
             <div class="meta-row">
-              <span class="badge">Wishlist</span>
-              <span v-if="item.category" class="category">{{ item.category }}</span>
+              <span v-if="item.category" class="product-category">{{ item.category }}</span>
             </div>
-            <h3>{{ item.name }}</h3>
-            <p class="description">
-              Basic product summary only. Open the product page for full details.
-            </p>
-
-            <div class="price">
-              <span class="current">${{ formatMoney(item.price) }}</span>
+            <h3 class="product-name">{{ item.name }}</h3>
+            
+            <div class="price-row">
+              <span class="product-price">${{ formatMoney(item.price) }}</span>
             </div>
-          </div>
 
-          <div class="actions">
-            <router-link
-              v-if="item.product_id"
-              :to="{ name: 'ProductDetail', params: { id: item.product_id } }"
-              class="btn-view"
-            >
-              View
-            </router-link>
-            <button @click="handleAddToCart(item)" class="btn-add-cart">
-              Add to Cart
-            </button>
-            <button @click="handleRemoveFromWishlist(item.id)" class="btn-remove">
-              Remove
-            </button>
+            <div class="card-actions">
+              <router-link
+                v-if="item.product_id"
+                :to="{ name: 'ProductDetail', params: { id: item.product_id } }"
+                class="btn-view"
+              >
+                View
+              </router-link>
+              <button @click="handleAddToCart(item)" class="btn-add-cart">
+                Add to Cart
+              </button>
+            </div>
           </div>
         </article>
       </div>
@@ -132,12 +136,6 @@ const handleRemoveFromWishlist = async (wishlistId) => {
 
   try {
     await removeFromWishlist(wishlistId)
-    await Swal.fire({
-      icon: 'success',
-      title: 'Removed',
-      text: 'Item removed from wishlist.',
-      confirmButtonColor: '#ef4444',
-    })
   } catch (err) {
     console.error('Failed to remove from wishlist:', err)
   }
@@ -158,11 +156,17 @@ const handleAddToCart = async (item) => {
       quantity: 1,
     })
 
-    await Swal.fire({
+    // Show a subtle confirmation toast instead of a harsh popup modal
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true,
+    })
+    Toast.fire({
       icon: 'success',
-      title: 'Added to cart',
-      text: `${item?.name || 'Item'} moved to your cart.`,
-      confirmButtonColor: '#ef4444',
+      title: `${item.name} added to cart`,
     })
   } catch (err) {
     console.error('Failed to add to cart:', err)
@@ -172,12 +176,12 @@ const handleAddToCart = async (item) => {
 
 <style scoped>
 .wishlist-page {
-  min-height: 100%;
-  padding: 32px 24px 72px;
+  min-height: 100vh;
+  padding: 60px 24px 100px;
   background:
-    radial-gradient(circle at top left, rgba(249, 115, 22, 0.12), transparent 28%),
-    radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 26%),
-    linear-gradient(180deg, #fffdf7 0%, #f5fff2 100%);
+    radial-gradient(circle at top left, rgba(249, 115, 22, 0.12), transparent 30%),
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 28%),
+    linear-gradient(180deg, #fffdf8 0%, #f6fff5 100%);
 }
 
 .wishlist-shell {
@@ -187,195 +191,255 @@ const handleAddToCart = async (item) => {
 
 .wishlist-hero {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 22px;
+  margin-bottom: 40px;
 }
 
 .eyebrow {
-  margin: 0 0 10px;
-  color: #25603a;
+  margin: 0 0 8px;
+  color: #22c55e;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
 }
 
-.wishlist-hero h1 {
-  margin: 0;
-  color: #17301c;
-  font-size: clamp(2rem, 4vw, 3.5rem);
+.page-title {
+  margin: 0 0 8px;
+  color: #112d19;
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
   letter-spacing: -0.04em;
+  font-weight: 800;
 }
 
-.lead {
-  margin: 10px 0 0;
-  max-width: 68ch;
-  color: #58705c;
-  line-height: 1.7;
-}
-
-.btn-shop,
-.btn-view,
-.btn-add-cart,
-.btn-remove {
-  text-decoration: none;
-  border-radius: 999px;
-  padding: 12px 18px;
-  font-weight: 700;
-  border: 0;
-  cursor: pointer;
+.subtitle {
+  color: #55755b;
+  font-size: 1.05rem;
+  max-width: 60ch;
+  margin: 0;
 }
 
 .btn-shop {
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 14px 28px;
+  font-weight: 700;
   color: #fff;
   background: linear-gradient(135deg, #ef4444, #f97316);
-  box-shadow: 0 14px 28px rgba(249, 115, 22, 0.2);
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.2);
+  transition: all 0.25s ease;
+}
+
+.btn-shop:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(239, 68, 68, 0.3);
 }
 
 .state-box {
-  padding: 24px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.9);
+  padding: 60px 40px;
+  text-align: center;
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(23, 48, 28, 0.08);
-  box-shadow: 0 18px 50px rgba(24, 48, 28, 0.08);
+  box-shadow: 0 20px 60px rgba(24, 48, 28, 0.05);
+  backdrop-filter: blur(20px);
 }
 
-.state-box.error {
-  color: #b91c1c;
+.state-box.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.wishlist-items {
+.empty-icon {
+  font-size: 4rem;
+  color: #22c55e;
+  opacity: 0.7;
+  margin-bottom: 16px;
+}
+
+.state-box h3 {
+  color: #112d19;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.state-box p {
+  color: #55755b;
+  margin-bottom: 24px;
+}
+
+.btn-shop-empty {
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-weight: 700;
+  color: #fff;
+  background: #22c55e;
+  transition: background-color 0.2s ease;
+}
+
+.btn-shop-empty:hover {
+  background-color: #16a34a;
+}
+
+.wishlist-grid {
   display: grid;
-  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 28px;
 }
 
-.wishlist-item {
-  display: grid;
-  grid-template-columns: 120px 1fr auto;
-  gap: 18px;
-  padding: 18px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(23, 48, 28, 0.08);
-  box-shadow: 0 18px 50px rgba(24, 48, 28, 0.08);
-  backdrop-filter: blur(12px);
-}
-
-.product-image-wrap {
-  width: 120px;
-  height: 120px;
-  border-radius: 18px;
+.wishlist-card {
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(23, 48, 28, 0.06);
+  box-shadow: 0 16px 45px rgba(24, 48, 28, 0.05);
   overflow: hidden;
-  background: rgba(23, 48, 28, 0.06);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
 }
 
-.product-image,
-.image-placeholder {
+.wishlist-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 25px 60px rgba(24, 48, 28, 0.12);
+}
+
+.card-image-wrapper {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: linear-gradient(135deg, #dcfce7 0%, #fed7aa 100%);
+}
+
+.product-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.wishlist-card:hover .product-image {
+  transform: scale(1.08);
 }
 
 .image-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #7c8d80;
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: #55755b;
   font-weight: 700;
 }
 
-.product-info h3 {
-  margin: 10px 0 8px;
-  color: #17301c;
-  font-size: 1.2rem;
+.btn-remove-icon {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: #ef4444;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.btn-remove-icon:hover {
+  background: #ef4444;
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.card-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
+  margin-bottom: 6px;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: rgba(34, 197, 94, 0.14);
-  color: #166534;
+.product-category {
+  color: #f97316;
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
 
-.category {
-  color: #58705c;
+.product-name {
+  margin: 0 0 10px;
+  color: #112d19;
+  font-size: 1.25rem;
   font-weight: 700;
 }
 
-.description {
-  color: #58705c;
-  margin: 0 0 12px;
+.price-row {
+  margin-bottom: 18px;
 }
 
-.current {
-  color: #17301c;
+.product-price {
+  color: #112d19;
   font-weight: 800;
-  font-size: 1.15rem;
+  font-size: 1.35rem;
 }
 
-.actions {
+.card-actions {
   display: grid;
+  grid-template-columns: 1fr 2fr;
   gap: 10px;
-  min-width: 150px;
+  margin-top: auto;
+}
+
+.btn-view,
+.btn-add-cart {
+  border-radius: 16px;
+  padding: 12px 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.2s ease;
 }
 
 .btn-view {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #17301c;
-  background: rgba(23, 48, 28, 0.08);
+  background: #f1f5f9;
+  color: #475569;
 }
 
-.btn-add-cart,
-.btn-remove {
+.btn-view:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.btn-add-cart {
+  background: #22c55e;
   color: #fff;
-  background: linear-gradient(135deg, #ef4444, #f97316);
 }
 
-.btn-remove {
-  background: rgba(23, 48, 28, 0.08);
-  color: #17301c;
+.btn-add-cart:hover {
+  background-color: #16a34a;
 }
 
 @media (max-width: 768px) {
   .wishlist-hero {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .wishlist-item {
-    grid-template-columns: 1fr;
-  }
-
-  .product-image-wrap {
-    width: 100%;
-    height: 220px;
-  }
-
-  .actions {
-    min-width: 0;
-  }
-}
-
-@media (max-width: 480px) {
-  .wishlist-page {
-    padding: 20px 14px 56px;
   }
 }
 </style>

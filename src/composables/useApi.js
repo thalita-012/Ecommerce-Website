@@ -5,7 +5,7 @@ import { ref } from 'vue'
 const API_BASE = import.meta.env.DEV
   ? '/api'
   : (import.meta.env.VITE_API_URL || '/api')
-let memoryToken = null
+const TOKEN_KEY = 'auth_token'
 
 // Custom error class for API errors
 class ApiError extends Error {
@@ -26,7 +26,11 @@ export function useApi() {
    * @returns {string|null} The auth token or null
    */
   const getToken = () => {
-    return memoryToken
+    try {
+      return localStorage.getItem(TOKEN_KEY)
+    } catch {
+      return null
+    }
   }
 
   /**
@@ -34,14 +38,26 @@ export function useApi() {
    * @param {string} token - The authentication token
    */
   const setToken = (token) => {
-    memoryToken = token || null
+    try {
+      if (token) {
+        localStorage.setItem(TOKEN_KEY, token)
+      } else {
+        localStorage.removeItem(TOKEN_KEY)
+      }
+    } catch {
+      // ignore storage failures
+    }
   }
 
   /**
    * Remove authentication token from memory
    */
   const removeToken = () => {
-    memoryToken = null
+    try {
+      localStorage.removeItem(TOKEN_KEY)
+    } catch {
+      // ignore storage failures
+    }
   }
 
   /**

@@ -146,8 +146,10 @@ import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
 import { useCart } from '@/composables/useCart'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const CHECKOUT_DRAFT_KEY = 'checkout_draft'
 
 const {
@@ -184,9 +186,20 @@ const incrementQty = (itemId) => {
 
 const handleCheckout = () => {
   try {
+    if (!authStore.isAuthenticated) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Login required',
+        text: 'Please sign in or create an account before checking out.',
+        confirmButtonColor: '#ef4444',
+      }).then(() => {
+        router.push({ name: 'Login', query: { redirect: '/checkout' } })
+      })
+      return
+    }
+
     const orderDraft = prepareForCheckout()
     sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(orderDraft))
-    clearCart()
     router.push({ name: 'Checkout' })
   } catch (err) {
     console.error('Checkout error:', err)

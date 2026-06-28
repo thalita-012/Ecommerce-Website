@@ -51,8 +51,11 @@
 
           <!-- Stock Status -->
           <div class="stock-status" :class="{ 'in-stock': product.stock > 0, 'out-of-stock': product.stock === 0 }">
-            <span v-if="product.stock > 0" class="badge badge-success">
+            <span v-if="product.stock > 5" class="badge badge-success">
               In Stock ({{ product.stock }} available)
+            </span>
+            <span v-else-if="product.stock > 0" class="badge badge-warning" style="background-color: #f59e0b !important; color: #1e293b !important; font-weight: 700; padding: 4px 8px; border-radius: 4px; display: inline-block;">
+              Only {{ product.stock }} left (Low Stock!)
             </span>
             <span v-else class="badge badge-danger">
               Out of Stock

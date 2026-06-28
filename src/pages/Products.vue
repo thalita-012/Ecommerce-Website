@@ -85,6 +85,12 @@
           <div class="product-details">
             <p v-if="product.category?.name" class="product-category">{{ product.category.name }}</p>
             <h3 class="product-name">{{ product.name }}</h3>
+            
+            <div class="mb-2">
+              <span v-if="product.stock <= 0" class="badge bg-danger text-white rounded-3 px-2 py-1 small" style="font-size: 0.72rem; font-weight: 700; background-color: #ef4444 !important; display: inline-block;">Out of stock</span>
+              <span v-else-if="product.stock <= 5" class="badge bg-warning text-dark rounded-3 px-2 py-1 small" style="font-size: 0.72rem; font-weight: 700; background-color: #f59e0b !important; display: inline-block; color: #1e293b !important;">Only {{ product.stock }} left!</span>
+            </div>
+
             <p class="product-description">{{ product.description }}</p>
 
             <div class="product-price">
@@ -94,8 +100,13 @@
               </span>
             </div>
 
-            <button @click.stop="handleAddToCart(product)" class="btn-add-cart">
-              Add to Cart
+            <button 
+              @click.stop="handleAddToCart(product)" 
+              class="btn-add-cart" 
+              :disabled="product.stock <= 0"
+              :style="product.stock <= 0 ? 'background-color: #cbd5e1 !important; border-color: #cbd5e1 !important; color: #64748b !important; cursor: not-allowed;' : ''"
+            >
+              {{ product.stock <= 0 ? 'Out of Stock' : 'Add to Cart' }}
             </button>
           </div>
         </article>

@@ -282,9 +282,13 @@ onMounted(() => {
 
 .summary-card span {
   display: block;
-  color: rgba(255, 255, 255, 0.72);
+  color: #58705c;
   font-size: 0.85rem;
   margin-bottom: 6px;
+}
+
+.summary-card.accent span {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .summary-card strong {

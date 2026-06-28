@@ -40,15 +40,15 @@
       <div v-if="orders.length" class="orders-table-wrap">
         <div class="orders-table">
           <div class="orders-head">
-            <span>Order ID</span>
+            <span>Order #</span>
             <span>Date</span>
             <span>Status</span>
             <span>Total Price</span>
             <span></span>
           </div>
 
-          <article v-for="order in orders" :key="order.id" class="orders-row">
-            <div class="cell order-id">#{{ order.id }}</div>
+          <article v-for="(order, index) in orders" :key="order.id" class="orders-row">
+            <div class="cell order-id">#{{ (pagination.currentPage - 1) * (pagination.perPage || 10) + index + 1 }}</div>
             <div class="cell">{{ formatDate(order.created_at) }}</div>
             <div class="cell">
               <span class="status" :class="statusClass(order.status)">{{ order.status || 'Pending' }}</span>

@@ -6,14 +6,52 @@ import { useApi } from '@/composables/useApi'
 
 export const useAuthStore = defineStore('auth', () => {
   const api = useApi()
+  const USER_KEY = 'auth_user'
+  const TOKEN_KEY = 'auth_token'
+
+  const readUser = () => {
+    try {
+      if (typeof window === 'undefined') return null
+      const saved = window.localStorage.getItem(USER_KEY)
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  }
+
+  const saveUser = (userData) => {
+    try {
+      if (typeof window === 'undefined') return
+      window.localStorage.setItem(USER_KEY, JSON.stringify(userData))
+    } catch (err) {
+      console.error('Failed to save user data:', err)
+    }
+  }
+
+  const clearUser = () => {
+    try {
+      if (typeof window === 'undefined') return
+      window.localStorage.removeItem(USER_KEY)
+    } catch (err) {
+      console.error('Failed to clear user data:', err)
+    }
+  }
+
+  const bootstrapAuth = () => {
+    const savedUser = readUser()
+    if (savedUser) {
+      user.value = savedUser
+    }
+  }
 
   // State
-  const user = ref(null)
+  const user = ref(readUser())
+  const token = ref(typeof window !== 'undefined' ? window.localStorage.getItem(TOKEN_KEY) : null)
   const loading = ref(false)
   const error = ref(null)
 
   // Computed
-  const isAuthenticated = computed(() => !!user.value)
+  const isAuthenticated = computed(() => !!user.value && !!token.value)
 
   /**
    * Set authentication state
@@ -22,7 +60,20 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const setAuth = (userData, authToken) => {
     user.value = userData
+    token.value = authToken || null
     api.setToken(authToken)
+    saveUser(userData)
+    try {
+      if (typeof window !== 'undefined') {
+        if (authToken) {
+          window.localStorage.setItem(TOKEN_KEY, authToken)
+        } else {
+          window.localStorage.removeItem(TOKEN_KEY)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to save token:', err)
+    }
   }
 
   /**
@@ -30,7 +81,16 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const clearAuth = () => {
     user.value = null
+    token.value = null
     api.removeToken()
+    clearUser()
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(TOKEN_KEY)
+      }
+    } catch (err) {
+      console.error('Failed to clear token:', err)
+    }
   }
 
   /**
@@ -169,6 +229,7 @@ export const useAuthStore = defineStore('auth', () => {
       const userData = response.user || response.data || response
 
       user.value = userData
+      saveUser(userData)
       return userData
     } catch (err) {
       error.value = err.message || 'Failed to update profile'
@@ -243,5 +304,6 @@ export const useAuthStore = defineStore('auth', () => {
     verifyAuth,
     setAuth,
     clearAuth,
+    bootstrapAuth,
   }
 })

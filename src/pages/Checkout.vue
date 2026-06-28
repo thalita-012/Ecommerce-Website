@@ -295,6 +295,11 @@ onMounted(() => {
 })
 
 const handleCheckout = async () => {
+  if (!isAuthenticated.value) {
+    router.push({ name: 'Login', query: { redirect: '/checkout' } })
+    return
+  }
+
   // Validate form
   if (
     !formData.value.full_name ||

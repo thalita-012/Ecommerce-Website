@@ -1,7 +1,9 @@
+import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/auth';
 
 export function useAuth() {
   const authStore = useAuthStore();
+  const { user, isAuthenticated, loading, error } = storeToRefs(authStore);
 
   // Register user
   const register = async (name, email, password, passwordConfirmation) => {
@@ -52,10 +54,10 @@ export function useAuth() {
 
   return {
     // State
-    user: authStore.user,
-    isAuthenticated: authStore.isAuthenticated,
-    loading: authStore.loading,
-    error: authStore.error,
+    user,
+    isAuthenticated,
+    loading,
+    error,
     
     // Actions
     register,
