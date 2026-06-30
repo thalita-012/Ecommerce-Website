@@ -3,7 +3,7 @@
     <section class="page-hero">
       <div>
         <p class="eyebrow">Market fresh</p>
-        <h1>Vegetables with serious flavor.</h1>
+        <h1 id="decore">Vegetables with serious flavor.</h1>
         <p class="subtitle">
           Browse spicy peppers, crisp greens, roots, herbs, and everything you need to make the
           basket feel alive.
@@ -278,7 +278,13 @@ onMounted(async () => {
   text-transform: uppercase;
   font-size: 0.75rem;
 }
-
+#decore{
+  margin: 0 0 8px;
+  color: #112d19;
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  letter-spacing: -0.04em;
+  font-weight: 800;
+}
 .page-hero h1 {
   margin: 14px 0 10px;
   font-size: clamp(2.2rem, 5vw, 4.2rem);

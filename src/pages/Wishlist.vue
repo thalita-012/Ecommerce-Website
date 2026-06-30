@@ -198,12 +198,15 @@ const handleAddToCart = async (item) => {
 }
 
 .eyebrow {
-  margin: 0 0 8px;
-  color: #22c55e;
-  font-weight: 800;
-  text-transform: uppercase;
+  display: inline-flex;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.14);
+  color: #166534;
+  font-weight: 700;
   letter-spacing: 0.08em;
-  font-size: 0.78rem;
+  text-transform: uppercase;
+  font-size: 0.75rem;
 }
 
 .page-title {
